@@ -1,0 +1,57 @@
+# 1
+sudo nano /etc/udev/rules.d/99-joystick.rules
+# 检测游戏手柄设备
+SUBSYSTEM=="input", KERNEL=="js0", ACTION=="add", RUN+="/usr/local/bin/start_joystick_service.sh"
+
+# 2
+sudo nano /usr/local/bin/start_joystick_service.sh
+#!/bin/bash
+# 使用 'at' 命令让其延迟在 udev 环境外执行
+echo "/bin/systemctl start joystick-handler.service" | at now
+sudo chmod +x /usr/local/bin/start_joystick_service.sh
+
+# 3
+sudo nano /etc/systemd/system/joystick-handler.service
+[Unit]
+Description=Joystick Handler
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/path/to/your/joystick_program
+[Install]
+WantedBy=multi-user.target
+
+# 4
+sudo systemctl enable joystick-handler.service
+sudo systemctl start joystick-handler.service
+sudo systemctl status joystick-handler.service
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+通过以上方法，即可完整输出 data 指向的所有 length 个字节数据，方便调试 XMODEM 解包过程中的数据正确性。
+
+
+
+
+
+#include <iostream>
+
+// 自定义调试宏：包含文件名（仅名称）、行号、函数名、时间
+#define LOG_DEBUG(msg) do { \
+    std::string file = __FILE__; \
+    // 提取文件名（仅保留最后一个 '/' 后的部分） \
+    size_t pos = file.find_last_of("/\\"); \
+    std::string filename = (pos == std::string::npos) ? file : file.substr(pos + 1); \
+    std::cout << "[" << __DATE__ << " " << __TIME__ << "] " \
+              << "[" << filename << ":" << __LINE__ << " " << __func__ << "] " \
+              << msg << std::endl; \
+} while(0)
+
+void example_function() {
+    LOG_DEBUG("This is a debug message");
+}
+
+int main() {
+    example_function();
+    return 0;
+}

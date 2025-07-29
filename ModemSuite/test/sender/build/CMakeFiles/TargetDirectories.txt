@@ -1,0 +1,3 @@
+/home/roastduck/share/code/c/modem-pro/test/sender/build/CMakeFiles/rebuild_cache.dir
+/home/roastduck/share/code/c/modem-pro/test/sender/build/CMakeFiles/start.dir
+/home/roastduck/share/code/c/modem-pro/test/sender/build/CMakeFiles/edit_cache.dir
