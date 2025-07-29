@@ -1,0 +1,24 @@
+{
+    "files.associations": {
+        "modem_common.h": "c",
+        "xmodem_common.h": "c",
+        "xmodem_receiver.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "ymodem_sender.h": "c",
+        "stddef.h": "c",
+        "tuple": "c",
+        "string.h": "c",
+        "stdio.h": "c",
+        "ymodem.h": "c",
+        "ymodem_receiver.h": "c",
+        "ymodem_test_config.h": "c",
+        "stdlib.h": "c",
+        "stdbool.h": "c",
+        "xymodem_receiver.h": "c",
+        "xymodem_sender.h": "c",
+        "xymodem_test_config.h": "c",
+        "xymodem.h": "c"
+    }
+}

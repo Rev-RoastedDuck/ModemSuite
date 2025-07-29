@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/common",
+                "${workspaceFolder}/interface",
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/test/receiver",
+                "${workspaceFolder}/test/sender",
+                "${workspaceFolder}/test"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
