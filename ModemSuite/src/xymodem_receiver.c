@@ -77,11 +77,12 @@ int xymodem_receiver_unpack(XYMODEM_RECEIVER_RRD *self,
             self->status_params.prev.length = xymodem_receiver_strip_padding(self, 
                                                                             self->status_params.prev.data_pack, 
                                                                             self->status_params.prev.length);
-            *pack_length = dest_capacity > self->status_params.prev.length? self->status_params.prev.length : dest_capacity;
+            size_t length = dest != NULL && dest_capacity <= self->status_params.prev.length? dest_capacity : self->status_params.prev.length;
+            pack_length != NULL && (*pack_length = length,true);
             if(self->save_data == NULL){
-                memcpy(dest, self->status_params.prev.data_pack,*pack_length);
+                memcpy(dest, self->status_params.prev.data_pack,length);
             }else{
-                self->save_data(self->status_params.prev.data_pack,*pack_length);
+                self->save_data(self->status_params.prev.data_pack,length);
             }
         }
         xymodem_receiver_send_control_code(self, MODEM_ACK);
@@ -162,11 +163,12 @@ int xymodem_receiver_unpack(XYMODEM_RECEIVER_RRD *self,
     // 4. output data
     if(self->status_params.next_pack_number > 1){
         pack_index != NULL && (*pack_index = self->status_params.next_pack_number - 1, true);
-        *pack_length = dest_capacity > self->status_params.prev.length? self->status_params.prev.length : dest_capacity;
+        size_t length = dest != NULL && dest_capacity <= self->status_params.prev.length? dest_capacity : self->status_params.prev.length;
+        pack_length != NULL && (*pack_length = length,true);
         if(self->save_data == NULL){
-            memcpy(dest, self->status_params.prev.data_pack,*pack_length);
+            memcpy(dest, self->status_params.prev.data_pack,length);
         }else{
-            self->save_data(self->status_params.prev.data_pack,*pack_length);
+            self->save_data(self->status_params.prev.data_pack,length);
         }
     }
 
