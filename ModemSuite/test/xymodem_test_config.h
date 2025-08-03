@@ -13,9 +13,13 @@
 
 #include "modem_common.h"
 
-#define ymodem_test_modem_type (modem_ymodem)
-#define ymodem_test_length_type (modem_length_null)
-#define ymodem_test_verify_type (modem_crc16)
+#define ymodem_test_save_data_type_callback (0)
+#define ymodem_test_save_data_type_buff_ptr (1)
+
+#define ymodem_test_modem_type              (modem_ymodem)
+#define ymodem_test_length_type             (modem_length_null)
+#define ymodem_test_verify_type             (modem_crc16)
+#define ymodem_test_save_data_type          (ymodem_test_save_data_type_callback)
 
 // #if ymodem_test_modem_type == modem_xmodem
 //     #if ymodem_test_length_type == (modem_128)

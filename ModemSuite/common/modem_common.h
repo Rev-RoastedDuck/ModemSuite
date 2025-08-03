@@ -41,6 +41,7 @@
 #define MODEM_ERROR_PTR_NULL                      (-5)
 #define MODEM_ERROR_UNKNOWN_CONTROL_CODE          (-6)
 #define MODEM_ERROR_MANUALLT_CANCEL               (-7)
+#define MODEM_ERROR_TIMEOUT                       (-8)
 
 /******************************************************************************/
 /*----------------------------------MODEM_TYPE--------------------------------*/

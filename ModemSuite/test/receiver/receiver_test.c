@@ -21,7 +21,12 @@
 
 #define PORT 12345
 
+FILE *output_file;
 int sockfd, new_sockfd;
+
+void ymodem_debug_save_data(uint8_t *data, size_t length){
+    fwrite(data, 1, length, output_file);
+}
 
 void ymodem_debug_send_data(uint8_t *data, size_t length){
     printf("[ymodem-send-interface] ");
@@ -43,7 +48,6 @@ void receive_ymodem_file(const char *output_path) {
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
     unsigned char buffer[ymodem_test_raw_data_buff_size];
-    FILE *output_file;
 
     // 创建 TCP socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -87,12 +91,19 @@ void receive_ymodem_file(const char *output_path) {
     // 接收数据
     XYMODEM_RECEIVER_RRD ymodem;
     ymodem.config.max_retry_count = 10;
-    xymodem_receiver_init(&ymodem, 
-                            ymodem_test_modem_type, 
-                            ymodem_test_length_type, 
-                            ymodem_test_verify_type, 
-                            ymodem_debug_send_data, ymodem_get_time_ms);
-
+    #if ymodem_test_save_data_type == ymodem_test_save_data_type_callback
+        xymodem_receiver_init(&ymodem, 
+                                ymodem_test_modem_type, 
+                                ymodem_test_length_type, 
+                                ymodem_test_verify_type, 
+                                ymodem_debug_send_data, ymodem_get_time_ms, ymodem_debug_save_data);
+    #else
+        xymodem_receiver_init(&ymodem, 
+                                ymodem_test_modem_type, 
+                                ymodem_test_length_type, 
+                                ymodem_test_verify_type, 
+                                ymodem_debug_send_data, ymodem_get_time_ms, NULL);
+    #endif
     size_t pack_length = 0;
     uint8_t pack_index = 0;
     uint8_t data[1024] = {0};
@@ -104,17 +115,28 @@ void receive_ymodem_file(const char *output_path) {
         }
 
         int result = ymodem.interface->unpack(&ymodem, buffer, bytes_received, data, sizeof(data), &pack_index, &pack_length);
-        if(result < 0){
-            printf("unpack error. %d \r\n",result);
-        } else if (result == MODEM_CODE_UNPACK_SUCCESS){
-            fwrite(data, 1, pack_length, output_file);
-            printf("unpack success. %d \r\n",result);
-            
-        } else if (result == MODEM_CODE_PACK_FINISHED){
-            fwrite(data, 1, pack_length, output_file);
-            printf("unpack finished. %d \r\n",result);
-        }
-        usleep(10000);
+
+        #if ymodem_test_save_data_type == ymodem_test_save_data_type_callback
+            if(result < 0){
+                printf("unpack error. %d \r\n",result);
+            } else if (result == MODEM_CODE_UNPACK_SUCCESS){
+                printf("unpack success. %d \r\n",result);
+            } else if (result == MODEM_CODE_PACK_FINISHED){
+                printf("unpack finished. %d \r\n",result);
+            }
+            usleep(10000);
+        #else
+            if(result < 0){
+                printf("unpack error. %d \r\n",result);
+            } else if (result == MODEM_CODE_UNPACK_SUCCESS){
+                fwrite(data, 1, pack_length, output_file);
+                printf("unpack success. %d \r\n",result);
+            } else if (result == MODEM_CODE_PACK_FINISHED){
+                fwrite(data, 1, pack_length, output_file);
+                printf("unpack finished. %d \r\n",result);
+            }
+            usleep(10000);
+        #endif
     }
 
     fclose(output_file);
