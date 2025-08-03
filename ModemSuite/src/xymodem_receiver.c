@@ -39,9 +39,9 @@ static void xymodem_receiver_reset_status(XYMODEM_RECEIVER_RRD *self){
 /******************************************************************************/
 void xymodem_receiver_start_transfer(XYMODEM_RECEIVER_RRD *self){
     xymodem_receiver_reset_status(self);
-    
+    size_t start = self->get_time_ms();
     xymodem_receiver_send_control_code(self, g_modem_start_transfer[self->config.verify_type]);
-    // delay 3s
+    while (self->get_time_ms() < start + 1000);
     xymodem_receiver_send_control_code(self, g_modem_start_transfer[self->config.verify_type]);
 }
 
@@ -205,9 +205,10 @@ static XYMODEM_RECEIVER_INTERFACE_RRD g_xymodem_interface = {
 };
 
 int xymodem_receiver_init(XYMODEM_RECEIVER_RRD *self, MODEM_TYPE_RRD modem_type,
-                  MODEM_LENGTH_RRD length_type,MODEM_VERIFY_RRD verify_type,
-                  xymodem_receiver_send_data_fn_t send_data){
-    if(self == NULL || send_data == NULL){
+                          MODEM_LENGTH_RRD length_type,MODEM_VERIFY_RRD verify_type,
+                          xymodem_receiver_send_data_fn_t send_data,
+                          xymodem_receiver_get_time_ms_fn_t get_time_ms){
+    if(self == NULL || send_data == NULL || get_time_ms == NULL){
         return -1;
     }
     if(modem_type == modem_xmodem && length_type == modem_length_null){
@@ -224,6 +225,7 @@ int xymodem_receiver_init(XYMODEM_RECEIVER_RRD *self, MODEM_TYPE_RRD modem_type,
 
     self->interface = &g_xymodem_interface;
     self->send_data = send_data;
+    self->get_time_ms = get_time_ms;
     return 0;
 }
 
