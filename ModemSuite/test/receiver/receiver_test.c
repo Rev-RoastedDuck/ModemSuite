@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include <arpa/inet.h>
 
 #include "xymodem.h"
@@ -29,6 +30,13 @@ void ymodem_debug_send_data(uint8_t *data, size_t length){
     }
     printf("\r\n");
     send(new_sockfd, data, length, 0);
+}
+
+size_t ymodem_get_time_ms(void){
+    struct timeval tv;
+    gettimeofday(&tv, NULL);  // 获取当前时间（秒+微秒）
+
+    return (size_t)(tv.tv_sec * 1000 + tv.tv_usec / 1000);  // 转换为毫秒
 }
 
 void receive_ymodem_file(const char *output_path) {
@@ -79,13 +87,14 @@ void receive_ymodem_file(const char *output_path) {
     // 接收数据
     XYMODEM_RECEIVER_RRD ymodem;
     ymodem.config.max_retry_count = 10;
-    xymodem_receiver_init(&ymodem, ymodem_test_modem_type, ymodem_test_length_type, ymodem_test_verify_type, ymodem_debug_send_data);
+    xymodem_receiver_init(&ymodem, 
+                            ymodem_test_modem_type, 
+                            ymodem_test_length_type, 
+                            ymodem_test_verify_type, 
+                            ymodem_debug_send_data, ymodem_get_time_ms);
 
-    typedef struct __YMODEM_PACK_INFO{
-        size_t length; 
-        uint8_t data_pack[ymodem_test_data_buff_size];
-    }YMODEM_PACK_INFO;
-    
+    size_t pack_length = 0;
+    uint8_t pack_index = 0;
     uint8_t data[1024] = {0};
     while (1) {
         printf("==========\r\n");
@@ -94,14 +103,15 @@ void receive_ymodem_file(const char *output_path) {
             break;
         }
 
-        int result = ymodem.interface->receive(&ymodem, buffer, bytes_received, data, sizeof(buffer));
+        int result = ymodem.interface->unpack(&ymodem, buffer, bytes_received, data, sizeof(data), &pack_index, &pack_length);
         if(result < 0){
             printf("unpack error. %d \r\n",result);
-        } else if (result > 0){
-            fwrite(data, 1, result, output_file);
+        } else if (result == MODEM_CODE_UNPACK_SUCCESS){
+            fwrite(data, 1, pack_length, output_file);
             printf("unpack success. %d \r\n",result);
             
-        } else if (result == 0){
+        } else if (result == MODEM_CODE_PACK_FINISHED){
+            fwrite(data, 1, pack_length, output_file);
             printf("unpack finished. %d \r\n",result);
         }
         usleep(10000);

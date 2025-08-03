@@ -29,15 +29,18 @@
 /******************************************************************************/
 /*-------------------------------MODEM_Error_Code-----------------------------*/
 /******************************************************************************/
+#define MODEM_CODE_UNPACK_SUCCESS                 ( 3)
+#define MODEM_CODE_SESSION_FINISHED               ( 2)
+#define MODEM_CODE_NULL                           ( 1)
 #define MODEM_CODE_PACK_FINISHED                  ( 0)
+
 #define MODEM_ERROR_NO_FOUND_HEADER               (-1)
 #define MODEM_ERROR_LENGTH_IS_INSUFFICIENT        (-2)
 #define MODEM_ERROR_CHECK_NUM                     (-3)
 #define MODEM_ERROR_OVER_MAX_RETRY_COUNT          (-4)
 #define MODEM_ERROR_PTR_NULL                      (-5)
 #define MODEM_ERROR_UNKNOWN_CONTROL_CODE          (-6)
-#define MODEM_CODE_SESSION_FINISHED               (-10)
-#define MODEM_CODE_NULL                           (-11)
+#define MODEM_ERROR_MANUALLT_CANCEL               (-7)
 
 /******************************************************************************/
 /*----------------------------------MODEM_TYPE--------------------------------*/

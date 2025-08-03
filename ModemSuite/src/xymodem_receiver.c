@@ -27,7 +27,6 @@ static inline void xymodem_receiver_send_control_code(XYMODEM_RECEIVER_RRD *self
 
 static void xymodem_receiver_reset_status(XYMODEM_RECEIVER_RRD *self){
     self->status_params.retry_count = 0;
-    self->status_params.data_pack_size = 0;
     self->status_params.next_pack_number = self->config.modem_type == modem_xmodem? 1 : 0;
 
     self->status_params.curr = &self->status_params.data_pack[0];
@@ -50,25 +49,46 @@ void xymodem_receiver_stop_transfer(XYMODEM_RECEIVER_RRD *self){
 }
 
 /**
+ * \return size of last pack data
+*/
+size_t xymodem_receiver_strip_padding(XYMODEM_RECEIVER_RRD *self, const uint8_t *data, const size_t length) {
+    size_t new_len = length;
+    while (new_len > 0 && data[new_len - 1] == MODEM_NULL) {
+        new_len--;
+    }
+    return new_len;
+}
+
+/**
  * \return > 0: data start index
  *         = 0: transfer finished
  *         < 0: error code
 */
 int xymodem_receiver_unpack(XYMODEM_RECEIVER_RRD *self, 
                             const uint8_t *raw_data, const size_t raw_data_length,
-                            uint8_t *data_pack, uint8_t *pack_index){
-    if(raw_data == NULL || data_pack == NULL){
+                            uint8_t *dest, const size_t dest_capacity,
+                            uint8_t *pack_index, size_t *pack_length){
+    if(raw_data == NULL){
         return MODEM_ERROR_PTR_NULL;
     }
 
     // 0. check EOT / CAN / SESSION_FINISHED
     if(raw_data_length == 1 && raw_data[0] == MODEM_EOT){
+        // save last pack
+        if(self->status_params.next_pack_number > 1){
+            self->status_params.prev->length = xymodem_receiver_strip_padding(self, 
+                                                                            self->status_params.prev->data_pack, 
+                                                                            self->status_params.prev->length);
+            *pack_length = dest_capacity > self->status_params.prev->length? self->status_params.prev->length : dest_capacity;
+            memcpy(dest, self->status_params.prev->data_pack,*pack_length);
+        }
         xymodem_receiver_send_control_code(self, MODEM_ACK);
         return MODEM_CODE_PACK_FINISHED;
     }
     
     if(raw_data_length == 1 && raw_data[0] == MODEM_CAN){
-        return MODEM_CODE_PACK_FINISHED;
+        xymodem_receiver_reset_status(self);
+        return MODEM_ERROR_MANUALLT_CANCEL;
     }
 
     // 1. check length
@@ -137,62 +157,31 @@ int xymodem_receiver_unpack(XYMODEM_RECEIVER_RRD *self,
         return MODEM_ERROR_CHECK_NUM;
     }
 
-    // 4.return data
-    data_pack != NULL && (memcpy(data_pack, &raw_data[soh_index + 3], data_pack_size), true);
-    pack_index != NULL && (*pack_index = self->status_params.next_pack_number, true);
-
+    // 4.update status
     self->status_params.retry_count = 0;
-    self->status_params.data_pack_size = data_pack_size;
+    self->status_params.curr->length = data_pack_size;
+    memcpy(self->status_params.curr->data_pack, &raw_data[soh_index + 3], data_pack_size);
     self->status_params.next_pack_number = self->config.modem_type == modem_xmodem
                                             ? ((self->status_params.next_pack_number % 255) + 1)
                                             : ((self->status_params.next_pack_number + 1) % 255);
+    // 5. output data
+    if(self->status_params.next_pack_number > 2){
+        pack_index != NULL && (*pack_index = self->status_params.next_pack_number - 2, true);
+        *pack_length = dest_capacity > self->status_params.prev->length? self->status_params.prev->length : dest_capacity;
+        memcpy(dest, self->status_params.prev->data_pack, *pack_length);
+    }
 
+    // 6. switch buff
+    XYMODEM_PACK_INFO* tmp = self->status_params.prev;
+    self->status_params.prev = self->status_params.curr;
+    self->status_params.curr = tmp;
+
+    // 7. ack
     xymodem_receiver_send_control_code(self,MODEM_ACK);
-    return soh_index + 3;
+
+    return MODEM_CODE_UNPACK_SUCCESS;
 }
 
-/**
- * \return size of last pack data
-*/
-size_t xymodem_receiver_strip_padding(XYMODEM_RECEIVER_RRD *self, const uint8_t *data, const size_t length) {
-    size_t new_len = length;
-    while (new_len > 0 && data[new_len - 1] == MODEM_NULL) {
-        new_len--;
-    }
-    return new_len;
-}
-
-int xymodem_receiver_receive(XYMODEM_RECEIVER_RRD *self, 
-                            const uint8_t *raw_data, const size_t raw_data_length,
-                            uint8_t *dest, const size_t dest_capacity){
-    int result = xymodem_receiver_unpack(self, raw_data, raw_data_length, self->status_params.curr->data_pack, NULL);
-    self->status_params.curr->length = self->status_params.data_pack_size;
-
-    if (result > 0){
-        if(self->status_params.next_pack_number > 2){
-            size_t length = dest_capacity > self->status_params.prev->length? self->status_params.prev->length : dest_capacity;
-            memcpy(dest, self->status_params.prev->data_pack,length);
-            result = (int)length;
-        }else{
-            result = MODEM_CODE_NULL;
-        }
-        XYMODEM_PACK_INFO* tmp = self->status_params.prev;
-        self->status_params.prev = self->status_params.curr;
-        self->status_params.curr = tmp;
-    } else if (result == 0){
-        if(self->status_params.next_pack_number > 1){
-            self->status_params.prev->length = xymodem_receiver_strip_padding(self, 
-                                                                            self->status_params.prev->data_pack, 
-                                                                            self->status_params.prev->length);
-            size_t length = dest_capacity > self->status_params.prev->length? self->status_params.prev->length : dest_capacity;
-            memcpy(dest, self->status_params.prev->data_pack,length);
-            result = (int)length;
-            
-            xymodem_receiver_reset_status(self);
-        }
-    }
-    return result;
-}
 /******************************************************************************/
 /*--------------------------Construction/Destruction--------------------------*/
 /******************************************************************************/
@@ -201,7 +190,6 @@ static XYMODEM_RECEIVER_INTERFACE_RRD g_xymodem_interface = {
     .stop = (xymodem_receiver_stop_transfer_fn_t)xymodem_receiver_stop_transfer,
     .start = (xymodem_receiver_start_transfer_fn_t)xymodem_receiver_start_transfer,
     .strip_padding = (xymodem_receiver_strip_padding_fn_t)xymodem_receiver_strip_padding,
-    .receive = (xymodem_receiver_receive_fn_t)xymodem_receiver_receive
 };
 
 int xymodem_receiver_init(XYMODEM_RECEIVER_RRD *self, MODEM_TYPE_RRD modem_type,
@@ -218,7 +206,6 @@ int xymodem_receiver_init(XYMODEM_RECEIVER_RRD *self, MODEM_TYPE_RRD modem_type,
     self->config.length_type = length_type;
     self->config.verify_type = verify_type;
     self->status_params.retry_count = 0;
-    self->status_params.data_pack_size = 0;
     self->status_params.next_pack_number = modem_type == modem_xmodem? 1 : 0;
     self->status_params.curr = &self->status_params.data_pack[0];
     self->status_params.prev = &self->status_params.data_pack[1];
