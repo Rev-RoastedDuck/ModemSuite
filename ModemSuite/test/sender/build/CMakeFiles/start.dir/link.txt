@@ -1,1 +1,0 @@
-/usr/bin/cc   -rdynamic CMakeFiles/start.dir/home/roastduck/share/code/c/modem-pro/common/modem_common.c.o CMakeFiles/start.dir/home/roastduck/share/code/c/modem-pro/src/xymodem_receiver.c.o CMakeFiles/start.dir/home/roastduck/share/code/c/modem-pro/src/xymodem_sender.c.o CMakeFiles/start.dir/sender_test.c.o  -o ../start -lm 
