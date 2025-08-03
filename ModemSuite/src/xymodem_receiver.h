@@ -57,9 +57,6 @@ typedef struct __XYMODEM_RECEIVER_RRD{
 
         XYMODEM_PACK_INFO prev;
     }status_params;
-    
-    struct{
-    }private_params;
 
     XYMODEM_RECEIVER_INTERFACE_RRD *interface;
 

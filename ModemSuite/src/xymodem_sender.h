@@ -43,7 +43,7 @@ typedef struct __XYMODEM_SENDER_RRD {
         MODEM_LENGTH_RRD length_type;
         MODEM_VERIFY_RRD verify_type;
     } config;
-
+ 
     struct {
         uint8_t current_pack_number;
         uint8_t retry_count;
@@ -53,9 +53,6 @@ typedef struct __XYMODEM_SENDER_RRD {
         size_t remain_count;
         size_t current_length;
     } status_params;
-
-    struct {
-    } private_params;
 
     XYMODEM_SENDER_INTERFACE_RRD *interface;
 
