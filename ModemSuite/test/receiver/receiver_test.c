@@ -24,6 +24,13 @@
 FILE *output_file;
 int sockfd, new_sockfd;
 
+void ymodem_debug_pack_info(char *data[], size_t length){
+    for(size_t index = 0;index < length;++index){
+        printf("info-%d: %s \r\n",index, data[index]);
+    }
+    printf("==========\r\n");
+}
+
 void ymodem_debug_save_data(uint8_t *data, size_t length){
     fwrite(data, 1, length, output_file);
 }
@@ -96,13 +103,13 @@ void receive_ymodem_file(const char *output_path) {
                                 ymodem_test_modem_type, 
                                 ymodem_test_length_type, 
                                 ymodem_test_verify_type, 
-                                ymodem_debug_send_data, ymodem_get_time_ms, ymodem_debug_save_data);
+                                ymodem_debug_send_data, ymodem_get_time_ms, ymodem_debug_save_data, ymodem_debug_pack_info);
     #else
         xymodem_receiver_init(&ymodem, 
                                 ymodem_test_modem_type, 
                                 ymodem_test_length_type, 
                                 ymodem_test_verify_type, 
-                                ymodem_debug_send_data, ymodem_get_time_ms, NULL);
+                                ymodem_debug_send_data, ymodem_get_time_ms, NULL, ymodem_debug_pack_info);
     #endif
     size_t pack_length = 0;
     uint8_t pack_index = 0;
