@@ -170,6 +170,33 @@ int xymodem_receiver_unpack(XYMODEM_RECEIVER_RRD *self,
         }else{
             self->save_data(self->status_params.prev.data_pack,length);
         }
+    }else if(self->status_params.next_pack_number == 1){
+        if(self->pack_info_handle != NULL){
+            size_t pack_info_num = 0;
+            { // get pack info num
+                size_t length = xymodem_receiver_strip_padding(self, self->status_params.prev.data_pack, 
+                                                                    self->status_params.prev.length);
+                for(size_t index = 0; index < length;){
+                    char *s_temp = (char*)(&self->status_params.prev.data_pack[index]);
+                    size_t s_length = strlen(s_temp);
+                    if(s_length == 0){
+                        break;
+                    }
+                    index += s_length + 1;
+                    ++pack_info_num;
+                }
+            }
+
+            char **pack_info = malloc(sizeof(char*) * pack_info_num);
+            { // parse pack info
+                uint8_t *data_temp = self->status_params.prev.data_pack;
+                for(size_t index = 0; index < pack_info_num;++index){
+                    pack_info[index] = (char*)(data_temp);
+                    data_temp += strlen(pack_info[index]) + 1;
+                }
+            }
+            self->pack_info_handle(pack_info, pack_info_num);
+        }
     }
 
     // 5.update status
@@ -200,7 +227,8 @@ int xymodem_receiver_init(XYMODEM_RECEIVER_RRD *self, MODEM_TYPE_RRD modem_type,
                           MODEM_LENGTH_RRD length_type,MODEM_VERIFY_RRD verify_type,
                           xymodem_receiver_send_data_fn_t send_data,
                           xymodem_receiver_get_time_ms_fn_t get_time_ms,
-                          xymodem_receiver_save_data_fn_t save_data){
+                          xymodem_receiver_save_data_fn_t save_data,
+                          xymodem_receiver_pack_info_handle_fn_t pack_info_handle){
     if(self == NULL || send_data == NULL || get_time_ms == NULL){
         return -1;
     }
@@ -216,6 +244,7 @@ int xymodem_receiver_init(XYMODEM_RECEIVER_RRD *self, MODEM_TYPE_RRD modem_type,
     self->interface = &g_xymodem_interface;
     self->send_data = send_data;
     self->get_time_ms = get_time_ms;
+    self->pack_info_handle = pack_info_handle;
 
     if(save_data != NULL){
         self->save_data = save_data;
